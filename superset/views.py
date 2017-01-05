@@ -37,7 +37,7 @@ from wtforms.validators import ValidationError
 import superset
 from superset import (
     appbuilder, cache, db, models, viz, utils, app,
-    sm, sql_lab, sql_parse, results_backend, security, cached_view
+    sm, sql_lab, sql_parse, results_backend, security,
 )
 from superset.source_registry import SourceRegistry
 from superset.models import DatasourceAccessRequest as DAR
@@ -77,20 +77,43 @@ class BaseSupersetView(BaseView):
 
     def datasource_access_by_name(
             self, database, datasource_name, schema=None):
-        if (self.database_access(database) or
-                self.all_datasource_access()):
+        if self.database_access(database) or self.all_datasource_access():
             return True
 
         schema_perm = utils.get_schema_perm(database, schema)
         if schema and utils.can_access(sm, 'schema_access', schema_perm):
             return True
 
-        datasources = SourceRegistry.query_datasources_by_name(
+        datasources = SourceRegistry.query_datasources_by_names(
             db.session, database, datasource_name, schema=schema)
         for datasource in datasources:
             if self.can_access("datasource_access", datasource.perm):
                 return True
         return False
+
+    def accessible_by_user(self, database, datasource_names, schema=None):
+        if self.database_access(database) or self.all_datasource_access():
+            return datasource_names
+
+        schema_perm = utils.get_schema_perm(database, schema)
+        if schema and utils.can_access(sm, 'schema_access', schema_perm):
+            return datasource_names
+
+        role_ids = set([role.id for role in g.user.roles])
+        # TODO: cache user_perms or user_datasources
+        user_pvms = (
+            db.session.query(ab_models.PermissionView)
+            .join(ab_models.Permission)
+            .filter(ab_models.Permission.name == 'datasource_access')
+            .filter(ab_models.PermissionView.role.any(
+                ab_models.Role.id.in_(role_ids)))
+            .all()
+        )
+        user_perms = set([pvm.view_menu.name for pvm in user_pvms])
+        user_datasources = SourceRegistry.query_datasources_by_permissions(
+            db.session, database, user_perms)
+        full_names = set([d.full_name for d in user_datasources])
+        return [d for d in datasource_names if d in full_names]
 
 
 class ListWidgetWithCheckboxes(ListWidget):
@@ -1708,6 +1731,7 @@ class Superset(BaseSupersetView):
         """Endpoint that returns all tables and views from the database"""
         all_tables = []
         all_views = []
+        database = db.session.query(models.Database).filter_by(id=db_id).one()
         schemas = database.all_schema_names()
         for schema in schemas:
             all_tables.extend(database.all_table_names(schema=schema))
@@ -1715,41 +1739,22 @@ class Superset(BaseSupersetView):
         if not schemas:
             all_tables.extend(database.all_table_names())
             all_views.extend(database.all_view_names())
-
         return Response(
             json.dumps({"tables": all_tables, "views": all_views}),
-
-    @expose("/schemas/<db_id>")
-    def schemas(self, db_id):
-        # db_id = request.args.get('db_id')
-        database = (
-            db.session
-            .query(models.Database)
-            .filter_by(id=db_id)
-            .one()
-        )
-        return Response(
-            json.dumps({'schemas': database.all_schema_names()}),
             mimetype="application/json")
 
     @api
     @has_access_api
     @expose("/tables/<db_id>/<schema>/")
-    @cached_view(timeout=600)
     def tables(self, db_id, schema):
         """endpoint to power the calendar heatmap on the welcome page"""
         schema = utils.js_string_to_python(schema)
         substr = utils.js_string_to_python(request.args.get('substr'))
-        database = (
-            db.session
-            .query(models.Database)
-            .filter_by(id=db_id)
-            .one()
-        )
-        table_names = [t for t in database.all_table_names(schema) if
-                  self.datasource_access_by_name(database, t, schema=schema)]
-        view_names = [v for v in database.all_table_names(schema) if
-                 self.datasource_access_by_name(database, v, schema=schema)]
+        database = db.session.query(models.Database).filter_by(id=db_id).one()
+        table_names = self.accessible_by_user(
+            database, database.all_table_names(schema), schema)
+        view_names = self.accessible_by_user(
+            database, database.all_view_names(schema), schema)
 
         if substr:
             table_names = [tn for tn in table_names if substr in tn]
