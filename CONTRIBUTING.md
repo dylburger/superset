@@ -47,9 +47,71 @@ If you are proposing a feature:
 -   Remember that this is a volunteer-driven project, and that
     contributions are welcome :)
 
-## Latest Documentation
+## Documentation
 
-Latest documentation and tutorial are available [here](http://airbnb.io/superset)
+The latest documentation and tutorial are available [here](http://airbnb.io/superset).
+
+Contributing to the official documentation is fun and easy. All docs are found in the 
+`docs/` subdirectory of the repository, and written in the
+[reStructuredText format](https://en.wikipedia.org/wiki/ReStructuredText) (.rst).
+If you've written Markdown before, you'll find the reStructuredText format familiar.
+
+Superset uses [Sphinx](http://www.sphinx-doc.org/en/1.5.1/) to convert the rst files
+in `docs/` to the final HTML output users see.
+
+To make changes to the rst files and build the docs using Sphinx, you'll need to install
+a handful of developer dependencies. This will likely involve installing more than you'll
+need to *just* edit the documentation, but it shouldn't take much work.
+
+First, since Superset uses the [mysqlclient](https://pypi.python.org/pypi/mysqlclient) 
+package, you'll have to install some of the MySQL development files. If you're running
+Mac OS X, you can use [Homebrew](http://brew.sh/) to install these:
+
+    brew install mysql-connector-c
+
+If you're running Linux or Unix, use your package manager to install the MySQL dev
+packages, e.g. on Ubuntu:
+
+    sudo apt-get install libmysqlclient-dev
+
+Checkout the Superset source code from Github somewhere on your local machine:
+
+    git clone git@github.com:airbnb/superset.git
+
+At this point, you may also want to create a 
+[Python virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/)
+to manage the Python packages you're about to install:
+
+    virtualenv superset-dev
+    source superset-dev/bin/activate
+
+Finally, install the required developer dependencies by running this command
+from the root of the Superset code that you checked out above:
+
+    cd superset
+    pip install -r dev-reqs.txt
+
+To get the feel for how to edit and build the docs, let's edit a file, build
+the docs and see our changes in action. Go ahead and edit one of the files 
+under `docs/`, say `docs/tutorial.rst` - change it however you want. Check
+out the [ReStructuredText Primer](http://docutils.sourceforge.net/docs/user/rst/quickstart.html)
+for a reference on the formatting of the rst files.
+
+Once you've made your changes, run this command from the root of the Superset
+repo to convert the docs into HTML:
+
+    python setup.py build_sphinx
+
+You'll see a lot of output as Sphinx handles the conversion. After it's done, the
+HTML Sphinx generated should be in `docs/_build/html`. Go ahead and navigate there
+and start a simple web server so we can check out the docs in a browser:
+
+    cd docs/_build/html
+    python -m SimpleHTTPServer
+
+This will start a small Python web server listening on port 8000. Point your 
+browser to [http://localhost:8000/](http://localhost:8000/), find the file
+you edited earlier, and check out your changes!
 
 ## Setting up a Python development environment
 
