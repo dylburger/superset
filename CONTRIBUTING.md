@@ -51,8 +51,9 @@ If you are proposing a feature:
 
 The latest documentation and tutorial are available [here](http://airbnb.io/superset).
 
-Contributing to the official documentation is fun and easy. All docs are found in the 
-`docs/` subdirectory of the repository, and written in the
+Contributing to the official documentation is relatively easy, once you've setup
+your environment and done an edit end-to-end. The docs can be found in the 
+`docs/` subdirectory of the repository, and are written in the
 [reStructuredText format](https://en.wikipedia.org/wiki/ReStructuredText) (.rst).
 If you've written Markdown before, you'll find the reStructuredText format familiar.
 
@@ -74,9 +75,11 @@ packages, e.g. on Ubuntu:
 
     sudo apt-get install libmysqlclient-dev
 
-Checkout the Superset source code from Github somewhere on your local machine:
+Before you start changing the docs, you'll want to 
+[fork the Superset project on Github](https://help.github.com/articles/fork-a-repo/).
+Once that new repository has been created, clone it on your local machine:
 
-    git clone git@github.com:airbnb/superset.git
+    git clone git@github.com:your_username/superset.git
 
 At this point, you may also want to create a 
 [Python virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/)
@@ -85,16 +88,22 @@ to manage the Python packages you're about to install:
     virtualenv superset-dev
     source superset-dev/bin/activate
 
-Finally, install the required developer dependencies by running this command
+Finally, install the required Python dependencies by running this command
 from the root of the Superset code that you checked out above:
 
     cd superset
     pip install -r dev-reqs.txt
 
 To get the feel for how to edit and build the docs, let's edit a file, build
-the docs and see our changes in action. Go ahead and edit one of the files 
-under `docs/`, say `docs/tutorial.rst` - change it however you want. Check
-out the [ReStructuredText Primer](http://docutils.sourceforge.net/docs/user/rst/quickstart.html)
+the docs and see our changes in action. First, you'll want to 
+[create a new branch](https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging)
+to work on your changes:
+
+    git checkout -b changes-to-docs
+
+Now, go ahead and edit one of the files under `docs/`, say `docs/tutorial.rst` 
+- change it however you want. Check out the 
+[ReStructuredText Primer](http://docutils.sourceforge.net/docs/user/rst/quickstart.html)
 for a reference on the formatting of the rst files.
 
 Once you've made your changes, run this command from the root of the Superset
@@ -112,6 +121,37 @@ and start a simple web server so we can check out the docs in a browser:
 This will start a small Python web server listening on port 8000. Point your 
 browser to [http://localhost:8000/](http://localhost:8000/), find the file
 you edited earlier, and check out your changes!
+
+If you've made a change you'd like to contribute to the actual docs, just commit
+your code, push your new branch to Github:
+
+    git add docs/tutorial.rst
+    git commit -m 'Awesome new change to tutorial'
+    git push origin changes-to-docs
+
+Then, [open a pull request](https://help.github.com/articles/about-pull-requests/).
+
+If you're adding new images to the documentation, you'll notice that the images 
+referenced in the rst, e.g.
+
+    .. image:: _static/img/tutorial/tutorial_01_sources_database.png
+
+aren't actually included in that directory. _Instead_, you'll want to add and commit
+images (and any other static assets) to the _superset/assets/images_ directory.
+When the docs are being pushed to [airbnb.io](http://airbnb.io/superset/), images
+will be moved from there to the _\_static/img_ directory, just like they're referenced
+in the docs.
+
+For example, the image referenced above actually lives in
+
+    superset/assets/images/tutorial
+
+Since the image is moved during the documentation build process, the docs reference the
+image in 
+
+    _static/img/tutorial
+
+instead.
 
 ## Setting up a Python development environment
 
